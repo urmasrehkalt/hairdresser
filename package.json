@@ -1,0 +1,12 @@
+{
+  "name": "hairdresser-portal",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w server & npm run dev -w client",
+    "start": "npm run start -w server"
+  }
+}
