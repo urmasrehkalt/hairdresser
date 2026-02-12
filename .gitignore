@@ -1,5 +1,5 @@
 node_modules
 .DS_Store
 *.log
-server/data.db
+server/data.db*
 client/dist
