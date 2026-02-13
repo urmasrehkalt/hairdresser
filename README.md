@@ -1,13 +1,44 @@
-Juuksurisalongi iseteenindusportaal
+# Juuksurisalongi iseteenindusportaal – Salon 15
 
-Kohalik arendus
-- Paigalda paketid: npm install
-- Käivita arendus: npm run dev
+Avalik URL: https://hairdresser.fsa.ee
 
-Käivitus
+## Kohalik arendus
+
+```
+npm install
+npm run dev
+```
+
+## Käivitus
+
 - Backend (API): port 3000
-- Frontend: port 5173
+- Frontend (Vite): port 5173
 
-Andmed
-- SQLite fail: server/data.db
-- Algsed teenused ja juuksurid luuakse käivitusel
+## Struktuur
+
+```
+server/src/
+  index.js              – Express käivitus ja vahevara
+  database.js           – SQLite ühendus, migratsioonid, seed
+  routes/index.js       – Marsruudid (avalik + admin)
+  controllers/          – Päringute käsitlemine
+  models/               – Andmebaasipäringud
+  services/             – Äriloogika (ajakava)
+  middleware/            – Autentimine
+
+client/src/
+  App.jsx               – Peakomponent
+  components/Layout.jsx – Ühtne päis ja jalus
+  pages/BookingPage.jsx – Avalik broneerimisvaade
+  pages/AdminPage.jsx   – Admin-vaade (kaitstud tokeniga)
+  services/api.js       – API klienditeek
+```
+
+## Admin
+
+Admin-vaade nõuab tokenit. Vaikimisi token: `salon15admin` (muudetav keskkonnamuutujaga `ADMIN_TOKEN`).
+
+## Andmed
+
+- SQLite fail: `server/data.db`
+- Teenused ja juuksurid luuakse käivitusel automaatselt

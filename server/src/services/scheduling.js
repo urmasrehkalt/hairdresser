@@ -64,7 +64,7 @@ function buildAvailableSlots(date, durationMinutes, staffList, bookings) {
           staffId: staff.id,
           staffName: staff.name,
           start: slotStart.toISOString(),
-          end: slotEnd.toISOString()
+          end: slotEnd.toISOString(),
         });
       }
       cursor = cursor.add(15, "minute");
@@ -80,5 +80,5 @@ module.exports = {
   isQuarterHour,
   isWithinWorkingHours,
   buildAvailableSlots,
-  hasConflict
+  hasConflict,
 };
