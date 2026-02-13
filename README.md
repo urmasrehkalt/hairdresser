@@ -38,13 +38,32 @@ See käivitab korraga:
 
 Ava brauser aadressil **http://localhost:5173**.
 
-### 4. Produktsioon
+### 4. Produktsioon (deploy)
 
 ```bash
-cd client && npm run build
+# Ehita frontend
+npm run build -w client
+
+# Kustuta vana andmebaas (uus luuakse koos demo-andmetega automaatselt)
+rm -f server/data.db
 ```
 
 Seejärel teeninda `client/dist/` kausta staatiliste failidena (nt Caddy/Nginx).
+
+Andmebaas (`server/data.db`) luuakse automaatselt esimesel käivitusel koos teenuste, juuksurite ja demo-broneeringutega.
+
+### Deploy serverisse
+
+```bash
+sudo -u hairdresser bash -c '
+cd /home/hairdresser/apps/hairdresser &&
+git pull &&
+npm install &&
+npm run build -w client &&
+rm -f server/data.db
+'
+sudo systemctl restart hairdresser
+```
 
 ### Keskkonnamuutujad
 
