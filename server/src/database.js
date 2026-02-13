@@ -103,6 +103,93 @@ function seedIfEmpty() {
     });
     seedSchedule();
   }
+
+  // Demo broneeringud (ainult kui tabel on tühi)
+  const bookingCount = db
+    .prepare("SELECT COUNT(*) as count FROM bookings")
+    .get();
+  if (bookingCount.count === 0) {
+    const names = [
+      ["Kati Tamm", "+372 5551234"],
+      ["Jaan Kask", "+372 5559876"],
+      ["Liis Mets", "+372 5553456"],
+      ["Peeter Puu", "+372 5557890"],
+      ["Anna Lepp", "+372 5554321"],
+      ["Mart Kuusk", "+372 5556789"],
+      ["Kadri Saar", "+372 5552345"],
+      ["Toomas Rebane", "+372 5558765"],
+      ["Maria Põld", "+372 5551111"],
+      ["Erik Valk", "+372 5552222"],
+      ["Piret Nurm", "+372 5553333"],
+      ["Rein Kosk", "+372 5554444"],
+      ["Laura Järv", "+372 5555555"],
+      ["Andres Rand", "+372 5556666"],
+      ["Tiina Mägi", "+372 5557777"],
+    ];
+    const svcDurations = [30, 60, 30, 15]; // teenuste kestvused
+    const times = [
+      "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+      "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+      "15:00", "15:30", "16:00", "16:30", "17:00",
+    ];
+
+    const insertBooking = db.prepare(
+      `INSERT INTO bookings (service_id, staff_id, customer_name, customer_phone, start_time, end_time, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    );
+
+    // Lihtne pseudo-random (deterministlik, et iga seed annaks sama tulemuse)
+    let seed = 42;
+    function rand(max) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed % max;
+    }
+
+    const seedBookings = db.transaction(() => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let nameIdx = 0;
+
+      for (let i = 1; i <= 14; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const dow = d.getDay();
+        if (dow === 0 || dow === 6) continue; // ainult tööpäevad
+
+        const dateStr = d.toISOString().slice(0, 10);
+        const numBookings = 2 + rand(3); // 2–4 broneeringut päevas
+        const usedSlots = new Set();
+
+        for (let j = 0; j < numBookings; j++) {
+          let timeIdx;
+          let attempts = 0;
+          do {
+            timeIdx = rand(times.length);
+            attempts++;
+          } while (usedSlots.has(timeIdx) && attempts < 20);
+          if (usedSlots.has(timeIdx)) continue;
+          usedSlots.add(timeIdx);
+
+          const svcId = 1 + rand(4);
+          const staffId = 1 + rand(2);
+          const duration = svcDurations[svcId - 1];
+          const [name, phone] = names[nameIdx % names.length];
+          nameIdx++;
+
+          const startISO = `${dateStr}T${times[timeIdx]}:00.000Z`;
+          const endDate = new Date(startISO);
+          endDate.setMinutes(endDate.getMinutes() + duration);
+          const endISO = endDate.toISOString();
+
+          insertBooking.run(
+            svcId, staffId, name, phone,
+            startISO, endISO, new Date().toISOString(),
+          );
+        }
+      }
+    });
+    seedBookings();
+  }
 }
 
 seedIfEmpty();
