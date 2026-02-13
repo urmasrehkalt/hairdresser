@@ -12,10 +12,10 @@ Majutatakse DigitalOcean VPS-is (Ubuntu 24.04), Caddy veebiserver teenindab HTTP
 
 Rakendus koosneb kahest osast:
 
-- **Frontend (klient)** – React SPA (Vite), mis jookseb brauseris. Kasutaja tegevused (teenuse valik, aja broneerimine) saadetakse HTTP päringutena backendi API-le (`/api/...`). Vastus tuleb JSON-ina ja React renderdab tulemuse.
-- **Backend (server)** – Express.js API, mis võtab vastu päringuid, valideerib sisendeid, teostab äriloogikat (vabade aegade arvutamine, konflikti kontroll) ja salvestab/loeb andmeid SQLite andmebaasist.
+- **Frontend (klient)** – React SPA (Vite + React Router), mis jookseb brauseris. Kasutaja navigeerib samm-sammulise broneerimisviisardi kaudu: valib teenuse, kuupäeva, juuksuri ja kellaaja ning sisestab kontaktandmed. Kõik tegevused saadetakse HTTP päringutena backendi API-le (`/api/...`). Vastus tuleb JSON-ina ja React renderdab tulemuse.
+- **Backend (server)** – Express.js API, mis võtab vastu päringuid, valideerib sisendeid, teostab äriloogikat (vabade aegade arvutamine, konflikti kontroll, puhvriajad) ja salvestab/loeb andmeid SQLite andmebaasist.
 
-**Andmevoog näide:** Kasutaja valib teenuse ja kuupäeva → brauser saadab `GET /api/availability?date=...&serviceId=...` → Express kontroller kutsub mudelit → mudel pärib SQLite-st olemasolevad broneeringud → teenus arvutab vabad 15-min slotid → kontroller tagastab JSON vastuse → React kuvab vabad ajad.
+**Andmevoog näide:** Kasutaja valib teenuse → valib kuupäeva → brauser saadab `GET /api/availability?date=...&serviceId=...` → Express kontroller kutsub mudelit → mudel pärib SQLite-st olemasolevad broneeringud → scheduling-teenus arvutab vabad slotid (arvestades iga juuksuri individuaalset töögraafikut, 15-min puhvreid ja 2h etteteatamise nõuet) → kontroller tagastab JSON vastuse → React kuvab vabad ajad → kasutaja valib aja ja sisestab andmed → `POST /api/bookings` → kontroller valideerib sisendi → mudel loob transaktsioonilise broneeringu → kinnitus kuvatakse kasutajale.
 
 ---
 
@@ -23,17 +23,27 @@ Rakendus koosneb kahest osast:
 
 - **Express.js** (backend) – Node.js veebiraamistik, mis pakub marsruutimist, vahevara (middleware) süsteemi ja struktureeritud päringute käsitlemist. See on raamistik, kuna ta määrab rakenduse ülesehituse mustri (middleware pipeline, router, request/response tsükkel).
 - **React** (frontend) – komponentpõhine UI raamistik, mis haldab olekut ja renderdamist deklaratiivselt.
+- **React Router** – kliendipoolne marsruutimine (SPA navigatsioon `/` ja `/admin` vahel).
 
 ### MVC struktuur (backend)
 
 | Roll | Kaust | Kirjeldus |
 |------|-------|-----------|
 | **Mudel** | `server/src/models/` | Andmebaasipäringud (serviceModel, staffModel, bookingModel) |
-| **Kontroller** | `server/src/controllers/` | Päringute käsitlemine ja äriloogika |
+| **Kontroller** | `server/src/controllers/` | Päringute käsitlemine ja äriloogika delegeerimine |
 | **Vaade** | `client/src/pages/` | React lehed (BookingPage, AdminPage) |
 | **Marsruudid** | `server/src/routes/` | URL-de seostamine kontrolleritega |
 | **Vahevara** | `server/src/middleware/` | Autentimine (auth.js) |
-| **Teenused** | `server/src/services/` | Äriloogika (scheduling.js) |
+| **Teenused** | `server/src/services/` | Äriloogika (scheduling.js – slotid, puhvrid, töögraafik) |
+
+### Korduvkasutatavad moodulid
+
+Rakendus ei ole monoliitne fail – iga moodul vastutab ühe rolli eest:
+
+- **`scheduling.js`** – vabade aegade arvutamine, konflikti kontroll, puhvrid (kasutatav nii üksiku päeva kui nädalaülevaate kontrollerites)
+- **`auth.js`** – vahevara mis autendib admin-päringuid (kasutatav kõikides admin-marsruutides)
+- **`api.js`** (klient) – HTTP klienditeek kõikide API päringute jaoks (kasutatav kõikides React lehtedes)
+- **`Layout.jsx`** – ühine päis ja jalus, mida jagavad kõik lehed
 
 ---
 

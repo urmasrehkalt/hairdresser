@@ -18,6 +18,16 @@ db.exec(`
     name TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS staff_schedule (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    staff_id INTEGER NOT NULL,
+    day_of_week INTEGER NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
+    UNIQUE(staff_id, day_of_week)
+  );
+
   CREATE TABLE IF NOT EXISTS bookings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     service_id INTEGER NOT NULL,
@@ -69,6 +79,29 @@ function seedIfEmpty() {
       }
     });
     insertMany();
+  }
+
+  // Seedi vaikimisi töögraafik (E–R 09:00–18:00) neile, kellel seda pole
+  const staffWithoutSchedule = db
+    .prepare(
+      `SELECT s.id FROM staff s
+       WHERE NOT EXISTS (SELECT 1 FROM staff_schedule ss WHERE ss.staff_id = s.id)`
+    )
+    .all();
+
+  if (staffWithoutSchedule.length > 0) {
+    const insertSchedule = db.prepare(
+      "INSERT OR IGNORE INTO staff_schedule (staff_id, day_of_week, start_time, end_time) VALUES (?, ?, ?, ?)"
+    );
+    const seedSchedule = db.transaction(() => {
+      for (const staff of staffWithoutSchedule) {
+        // Päevad 1–5 (E–R)
+        for (let day = 1; day <= 5; day++) {
+          insertSchedule.run(staff.id, day, "09:00", "18:00");
+        }
+      }
+    });
+    seedSchedule();
   }
 }
 

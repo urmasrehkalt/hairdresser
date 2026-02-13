@@ -34,9 +34,26 @@ function getForDateDetailed(date) {
 }
 
 /**
- * Loob broneeringu transaktsioonina, et vältida samaaegseid topeltbroneeringuid.
- * Kontrollib konflikti uuesti transaktsioonisiseselt.
+ * Tagasta kõik tulevased broneeringud (alates tänasest).
  */
+function getUpcoming() {
+  const now = new Date().toISOString();
+  return db
+    .prepare(
+      `SELECT b.id, b.service_id, s.name AS service_name,
+        b.staff_id, st.name AS staff_name,
+        b.customer_name, b.customer_phone,
+        b.start_time, b.end_time
+      FROM bookings b
+      JOIN services s ON b.service_id = s.id
+      JOIN staff st ON b.staff_id = st.id
+      WHERE b.start_time >= ?
+      ORDER BY b.start_time
+      LIMIT 200`
+    )
+    .all(now);
+}
+
 const createBookingSafe = db.transaction(
   ({ serviceId, staffId, customerName, customerPhone, startTime, endTime }) => {
     const date = dayjs(startTime).format("YYYY-MM-DD");
@@ -83,4 +100,10 @@ function deleteById(id) {
   return result.changes;
 }
 
-module.exports = { getForDate, getForDateDetailed, createBookingSafe, deleteById };
+module.exports = {
+  getForDate,
+  getForDateDetailed,
+  getUpcoming,
+  createBookingSafe,
+  deleteById,
+};
